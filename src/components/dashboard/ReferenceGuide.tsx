@@ -32,7 +32,7 @@ const ReferenceGuide: React.FC<ReferenceGuideProps> = ({ isOpen, onClose }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-100"
+                        className="fixed inset-0 bg-black/75 z-100"
                     />
 
                     {/* Modal */}
@@ -40,31 +40,30 @@ const ReferenceGuide: React.FC<ReferenceGuideProps> = ({ isOpen, onClose }) => {
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-lg bg-zinc-950 border border-white/10 rounded-2xl p-6 z-101 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+                        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-2xl bg-zinc-950 border border-white/10 rounded-lg p-5 md:p-6 z-101 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
                     >
-                        <div className="flex justify-between items-center mb-6 shrink-0">
+                        <div className="flex justify-between items-center mb-5 shrink-0">
                             <div>
-                                <h2 className="text-xl font-bold text-white">ASL Reference Guide</h2>
-                                <p className="text-[10px] mono-data text-zinc-500 uppercase tracking-widest mt-1">Gestural Library v2.0 • 11 Letters</p>
+                                <h2 className="text-xl font-semibold text-white">ASL Reference</h2>
+                                <p className="text-sm text-zinc-500 mt-1">11 practice letters</p>
                             </div>
                             <button
                                 onClick={onClose}
-                                className="p-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                                className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors"
                             >
                                 <X size={20} />
                             </button>
                         </div>
 
-                        {/* Scrollable Area */}
-                        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-4">
+                        <div className="flex-1 overflow-y-auto pr-1 grid gap-3 md:grid-cols-2">
                             {GESTURES.map((g) => (
-                                <div key={g.letter} className="p-4 bg-zinc-900/50 border border-white/5 rounded-xl flex gap-4 group hover:border-red-500/30 transition-colors">
-                                    <div className="w-16 h-16 shrink-0 bg-red-500 rounded-lg flex items-center justify-center shadow-lg shadow-red-500/20">
-                                        <span className="text-3xl font-black text-zinc-950">{g.letter}</span>
+                                <div key={g.letter} className="p-4 bg-white/5 border border-white/8 rounded-lg flex gap-4">
+                                    <div className="w-12 h-12 shrink-0 bg-red-500 rounded-lg flex items-center justify-center">
+                                        <span className="text-2xl font-black text-zinc-950">{g.letter}</span>
                                     </div>
                                     <div className="flex-1">
-                                        <h4 className="text-sm font-bold text-white group-hover:text-red-400 transition-colors">{g.name}</h4>
-                                        <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                                        <h4 className="text-sm font-semibold text-white">{g.name}</h4>
+                                        <p className="text-sm text-zinc-500 mt-1 leading-relaxed">
                                             {g.description}
                                         </p>
                                     </div>
@@ -72,9 +71,9 @@ const ReferenceGuide: React.FC<ReferenceGuideProps> = ({ isOpen, onClose }) => {
                             ))}
                         </div>
 
-                        <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between shrink-0">
-                            <span className="text-[9px] mono-data text-zinc-600 uppercase tracking-tighter">Engine: Vector Geometry 2.0</span>
-                            <span className="text-[9px] mono-data text-red-500 font-bold uppercase cursor-default">Scroll for more</span>
+                        <div className="mt-5 pt-4 border-t border-white/8 flex items-center justify-between shrink-0 text-xs text-zinc-500">
+                            <span>Vector recognition</span>
+                            <span>Scroll for more</span>
                         </div>
                     </motion.div>
                 </>

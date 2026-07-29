@@ -27,24 +27,113 @@
 }
 
 @layer utilities {
-  .bento-grid {
+  .dashboard-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1.7fr) minmax(340px, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    align-items: start;
+    gap: 1.5rem;
     width: 100%;
     flex: 1;
+    height: calc(100dvh - 72px);
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .dashboard-sidebar {
+    display: grid;
+    grid-template-rows: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 0.75rem;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .dashboard-bottom {
+    display: grid;
+    grid-template-columns: minmax(118px, 0.75fr) minmax(0, 1.25fr);
+    gap: 0.75rem;
     min-height: 0;
   }
 
+  .dashboard-sidebar > .bento-tile {
+    min-height: 0;
+  }
+
+  .camera-tile {
+    height: min(640px, calc(100dvh - 80px));
+    width: 100%;
+    min-width: 0;
+  }
+
   .bento-tile {
-    @apply bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm transition-all duration-300;
+    @apply bg-zinc-900/45 border border-white/8 rounded-lg overflow-hidden transition-colors duration-200;
   }
 
   .bento-tile-active {
-    @apply border-red-500/30 shadow-accent;
+    @apply border-white/10;
   }
 
   .mono-data {
     @apply font-mono uppercase tracking-wider;
+  }
+
+  @media (max-width: 1100px) {
+    .dashboard-grid {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      height: calc(100dvh - 56px);
+      max-height: calc(100dvh - 56px);
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .dashboard-sidebar {
+      width: 100%;
+      height: auto;
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      grid-template-rows: none;
+      overflow: visible;
+    }
+
+    .dashboard-bottom {
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .dashboard-sidebar > .bento-tile:first-child {
+      min-height: 280px;
+    }
+
+    .dashboard-bottom > .bento-tile:first-child {
+      min-height: 220px;
+    }
+
+    .dashboard-bottom > .bento-tile:last-child {
+      min-height: 340px;
+      overflow: visible;
+    }
+
+    .camera-tile {
+      height: auto;
+      min-height: 0;
+      aspect-ratio: 4 / 3;
+      flex: none;
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .dashboard-sidebar {
+      grid-template-columns: 1fr;
+    }
+
   }
 }

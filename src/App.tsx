@@ -40,44 +40,17 @@ function App() {
     : 0;
 
   return (
-    <main className="h-dvh w-dvw bg-zinc-950 flex flex-col transition-colors duration-700 font-sans">
+    <main className="h-dvh w-dvw bg-zinc-950 flex flex-col font-sans">
       <ReferenceGuide isOpen={isReferenceOpen} onClose={() => setIsReferenceOpen(false)} />
 
-      <header className="h-20 px-4 flex items-center justify-between border-b border-zinc-900/50 bg-zinc-950/80 backdrop-blur-xl z-30">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/20">
-            <span className="text-zinc-950 font-black text-sm">SS</span>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-white leading-none">Sign Stream</h1>
-            <p className="text-[10px] mono-data text-zinc-500 mt-1 uppercase tracking-widest opacity-60">
-              {isReady ? 'Geometric Engine Ready' : 'Loading...'}
-            </p>
-          </div>
-        </div>
-
-        {/* Status indicator */}
-        <div className="flex items-center gap-3">
-          <div className={`px-3 py-1.5 rounded-lg text-xs font-medium ${displayedLetter
-            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-            : 'bg-zinc-800 text-zinc-400'
-            }`}>
-            {displayedLetter ? `Detecting: ${displayedLetter}` : 'No match'}
-          </div>
-          <span className="text-[10px] text-zinc-500">
-            {displayedAccuracy > 0 ? `${displayedAccuracy}%` : '--'}
-          </span>
-        </div>
-      </header>
-
-      <div className="flex-1 bento-grid w-full px-4 py-4 overflow-hidden">
+      <div className="flex-1 dashboard-grid w-full px-6 py-7 md:px-10 md:py-9 overflow-y-auto">
         <WebcamTile
           videoRef={videoRef}
           results={results}
           isTrackingReady={isReady}
         />
 
-        <div className="flex flex-col gap-4 h-full min-h-0">
+        <div className="dashboard-sidebar">
           <GoalTile
             targetLetter={targetLetter}
             detectedLetter={displayedLetter}
@@ -85,15 +58,16 @@ function App() {
             onNext={handleNext}
             onPrev={handlePrev}
           />
-          <ScoreTile
-            score={displayedAccuracy}
-            totalScore={score}
-          />
-          <FeedbackTile
-            confidence={detectionData.confidence}
-            fingerStates={detectionData.fingerStates}
-            instruction={INSTRUCTIONS[targetLetter]}
-          />
+          <div className="dashboard-bottom">
+            <ScoreTile
+              score={displayedAccuracy}
+              totalScore={score}
+            />
+            <FeedbackTile
+              confidence={detectionData.confidence}
+              instruction={INSTRUCTIONS[targetLetter]}
+            />
+          </div>
         </div>
       </div>
     </main>

@@ -80,8 +80,7 @@ const WebcamTile = ({ videoRef, results, isTrackingReady }: WebcamTileProps) => 
     }, [results]);
 
     return (
-        <div className="bento-tile bento-tile-active relative bg-black/40 group overflow-hidden h-full">
-            {/* Video Container - No overlays */}
+        <div className="camera-tile bento-tile bento-tile-active relative bg-black aspect-video min-h-[420px] lg:min-h-0">
             <div className="w-full h-full flex items-center justify-center overflow-hidden relative">
                 <Webcam
                     ref={webcamRef}
@@ -94,7 +93,6 @@ const WebcamTile = ({ videoRef, results, isTrackingReady }: WebcamTileProps) => 
                     }}
                 />
 
-                {/* Canvas Overlay for Hand Tracking */}
                 <canvas
                     ref={canvasRef}
                     className="absolute inset-0 w-full h-full scale-x-[-1] pointer-events-none z-20"
@@ -104,13 +102,19 @@ const WebcamTile = ({ videoRef, results, isTrackingReady }: WebcamTileProps) => 
                 />
             </div>
 
-            {/* Bottom Labels */}
-            <div className="absolute bottom-4 left-4 z-20 flex flex-col gap-0.5 pointer-events-none">
-                <h2 className="text-xl font-bold text-white tracking-tight">Main Stage</h2>
-                <p className="text-[10px] text-zinc-400 mono-data tracking-widest opacity-80">
-                    {isTrackingReady ? 'Hand Tracking Active' : 'Initializing MediaPipe...'}
-                </p>
+            <div className="absolute left-5 right-5 bottom-5 z-20 flex items-end justify-between gap-4 pointer-events-none">
+                <div>
+                    <h2 className="text-lg font-semibold text-white tracking-tight">Camera</h2>
+                    <p className="text-xs text-zinc-400">
+                        {isTrackingReady ? 'Hand tracking active' : 'Starting hand tracking'}
+                    </p>
+                </div>
+                <span className={`px-2.5 py-1 rounded-full text-xs border ${isTrackingReady ? 'bg-green-500/10 border-green-500/20 text-green-300' : 'bg-white/5 border-white/8 text-zinc-400'}`}>
+                    {isTrackingReady ? 'Live' : 'Loading'}
+                </span>
             </div>
+
+            <div className="absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-black/75 to-transparent pointer-events-none" />
         </div>
     );
 };
