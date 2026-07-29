@@ -14,20 +14,10 @@ export class GestureLogic {
         // Get all the measurements we need
         const ext = this.getExtensions(landmarks);
         const spread = this.getFingerSpread(landmarks);
-        const thumbOut = this.isThumbOut(landmarks);
         const thumbIndexTouching = this.isThumbIndexTouching(landmarks);
 
         // Count extended fingers (excluding thumb)
         const fingerCount = [ext.index, ext.middle, ext.ring, ext.pinky].filter(Boolean).length;
-
-        // Debug output
-        console.log('[Gesture]', JSON.stringify({
-            ext: { t: ext.thumb, i: ext.index, m: ext.middle, r: ext.ring, p: ext.pinky },
-            spread: spread.toFixed(1),
-            thumbOut,
-            thumbIndexTouching,
-            fingerCount
-        }));
 
         // === DETECTION LOGIC (most specific first) ===
 
@@ -121,50 +111,6 @@ export class GestureLogic {
             ring: isExtended(16, 13),
             pinky: isExtended(20, 17),
         };
-    }
-
-    // Is thumb sticking OUT from the fist (for A vs S, L vs D, Y vs I)
-    // A-BIASED: Default is thumbOut = true (A)
-    // S = ONLY when thumb is deeply tucked IN FRONT of the curled fingers
-    private isThumbOut(lm: Point3D[]): boolean {
-        const thumbTip = lm[4];
-        const indexMcp = lm[5];
-        const middleMcp = lm[9];
-        const pinkyMcp = lm[17];
-        const wrist = lm[0];
-        const indexPip = lm[6];  // Proximal interphalangeal joint of index
-
-        // Create a palm normal vector using cross product
-        // This gives us the direction the palm is facing (forward/backward)
-        const v1 = VectorMath.sub(indexMcp, wrist);
-        const v2 = VectorMath.sub(pinkyMcp, wrist);
-        const palmNormal = VectorMath.cross(v1, v2);
-        const palmNormalNorm = VectorMath.normalize(palmNormal);
-
-        // Vector from palm center (middleMcp) to thumb tip
-        const palmToThumb = VectorMath.sub(thumbTip, middleMcp);
-
-        // Project onto palm normal to get depth (how far in front of palm)
-        // Positive = in front of palm (toward camera when palm faces camera)
-        const depthFromPalm = VectorMath.dot(palmToThumb, palmNormalNorm);
-        const palmWidthDist = VectorMath.dist(pinkyMcp, indexMcp);
-
-        // For S: Thumb must be SIGNIFICANTLY in front of the palm
-        // This means the thumb is wrapped OVER the curled fingers
-        // Require depth > 0.6x palm width (very strict - thumb must be deeply tucked)
-        const isDeepInFront = depthFromPalm > palmWidthDist * 0.6;
-
-        // Also check if thumb is close to the fingers (near index PIP joint)
-        // For S, thumb should be close to where the fingers curl
-        const thumbToIndexPip = VectorMath.dist(thumbTip, indexPip);
-        const isNearFingers = thumbToIndexPip < palmWidthDist * 0.8;
-
-        // S = thumb is deeply in front AND close to the curled fingers
-        // A = everything else (default)
-        const isThumbTuckedForS = isDeepInFront && isNearFingers;
-
-        // Return TRUE for A (thumb visible/out), FALSE for S (thumb tucked)
-        return !isThumbTuckedForS;
     }
 
     // Check if thumb and index finger tips are touching/close (for F gesture)

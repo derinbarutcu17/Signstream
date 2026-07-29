@@ -89,8 +89,8 @@ const WebcamTile = ({ videoRef, results, isTrackingReady }: WebcamTileProps) => 
                     className="w-full h-full object-cover scale-x-[-1]"
                     videoConstraints={{
                         facingMode: 'user',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
                     }}
                 />
 

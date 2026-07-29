@@ -1,22 +1,47 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Hands } from '@mediapipe/hands';
 import type { Results } from '@mediapipe/hands';
 import { GestureLogic } from '../lib/GestureLogic';
 
+type DetectionData = {
+    confidence: number;
+    fingerStates: string[];
+    handCount: number;
+    landmarks: Results['multiHandLandmarks'][number] | null;
+    worldLandmarks: Results['multiHandWorldLandmarks'][number] | null;
+    bestMatch: string | null;
+    similarity: number;
+};
+
+const emptyDetectionData: DetectionData = {
+    confidence: 0,
+    fingerStates: ['Searching...'],
+    handCount: 0,
+    landmarks: null,
+    worldLandmarks: null,
+    bestMatch: null,
+    similarity: 0,
+};
+
+const STABILITY_THRESHOLD = 3;
+const TARGET_FRAME_MS = 1000 / 20;
+
 export const useHandTracking = (videoRef: React.RefObject<HTMLVideoElement | null>) => {
     const [isReady, setIsReady] = useState(false);
     const [results, setResults] = useState<Results | null>(null);
+    const [detectionData, setDetectionData] = useState<DetectionData>(emptyDetectionData);
 
     // Use refs to persist across re-renders
     const handsRef = useRef<Hands | null>(null);
     const animationRef = useRef<number | null>(null);
     const isRunningRef = useRef(false);
+    const isSendingRef = useRef(false);
+    const lastFrameTimeRef = useRef(0);
 
     // Gesture stabilization refs - require consistent detection to switch
     const currentGestureRef = useRef<string | null>(null);
     const pendingGestureRef = useRef<string | null>(null);
     const gestureCountRef = useRef(0);
-    const STABILITY_THRESHOLD = 3; // Need 3 consistent frames to switch
 
     // Smoothed accuracy value for less jittery display
     const smoothedSimilarityRef = useRef(0);
@@ -34,7 +59,48 @@ export const useHandTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
             isRunningRef.current = true;
             console.log('[HandTracking] Detection active! Ready for recognition.');
         }
-    }, []);
+
+        if (!detectionResults.multiHandWorldLandmarks?.[0]) {
+            smoothedSimilarityRef.current = smoothedSimilarityRef.current * 0.9;
+            setDetectionData({
+                ...emptyDetectionData,
+                similarity: smoothedSimilarityRef.current,
+            });
+            return;
+        }
+
+        const worldLandmarks = detectionResults.multiHandWorldLandmarks[0];
+        const { match: rawMatch } = logic.analyze(worldLandmarks);
+
+        // Gesture stabilization: require consistent detections before switching.
+        let stableMatch = currentGestureRef.current;
+
+        if (rawMatch !== pendingGestureRef.current) {
+            pendingGestureRef.current = rawMatch;
+            gestureCountRef.current = 1;
+        } else {
+            gestureCountRef.current++;
+        }
+
+        if (gestureCountRef.current >= STABILITY_THRESHOLD) {
+            stableMatch = rawMatch;
+            currentGestureRef.current = rawMatch;
+        }
+
+        const rawConfidence = detectionResults.multiHandedness?.[0]?.score || 0;
+        const smoothingFactor = 0.15;
+        smoothedSimilarityRef.current = smoothedSimilarityRef.current * (1 - smoothingFactor) + rawConfidence * smoothingFactor;
+
+        setDetectionData({
+            confidence: rawConfidence,
+            fingerStates: stableMatch ? [`Detected: ${stableMatch}`] : ['Analyzing...'],
+            handCount: detectionResults.multiHandLandmarks?.length || 0,
+            landmarks: detectionResults.multiHandLandmarks?.[0] || null,
+            worldLandmarks,
+            bestMatch: stableMatch,
+            similarity: smoothedSimilarityRef.current,
+        });
+    }, [logic]);
 
 
     // Initialize MediaPipe only once
@@ -55,8 +121,8 @@ export const useHandTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
         });
 
         hands.setOptions({
-            maxNumHands: 2,
-            modelComplexity: 1,
+            maxNumHands: 1,
+            modelComplexity: 0,
             minDetectionConfidence: 0.5,
             minTrackingConfidence: 0.5,
         });
@@ -69,7 +135,8 @@ export const useHandTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
         // Cleanup only on actual unmount
         return () => {
             console.log('[HandTracking] Cleanup called');
-            // Don't actually close in dev mode - let it persist
+            hands.close();
+            handsRef.current = null;
         };
     }, [onResults]);
 
@@ -78,12 +145,24 @@ export const useHandTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
         const runLoop = async () => {
             const video = videoRef.current;
             const hands = handsRef.current;
+            const now = performance.now();
 
-            if (video && hands && video.readyState >= 2 && video.videoWidth > 0) {
+            if (
+                video &&
+                hands &&
+                !isSendingRef.current &&
+                now - lastFrameTimeRef.current >= TARGET_FRAME_MS &&
+                video.readyState >= 2 &&
+                video.videoWidth > 0
+            ) {
                 try {
+                    isSendingRef.current = true;
+                    lastFrameTimeRef.current = now;
                     await hands.send({ image: video });
                 } catch {
                     // Silently ignore errors during detection
+                } finally {
+                    isSendingRef.current = false;
                 }
             }
 
@@ -106,70 +185,6 @@ export const useHandTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
         };
     }, [videoRef]);
 
-    // Compute finger states and metadata from results
-    const detectionData = useMemo(() => {
-        if (!results?.multiHandWorldLandmarks?.[0]) {
-            // Smoothly decay to 0 when no hand detected
-            smoothedSimilarityRef.current = smoothedSimilarityRef.current * 0.9;
-            return {
-                confidence: 0,
-                fingerStates: ['Searching...'],
-                handCount: 0,
-                landmarks: null,
-                worldLandmarks: null,
-                bestMatch: null,
-                similarity: smoothedSimilarityRef.current
-            };
-        }
-
-        const worldLandmarks = results.multiHandWorldLandmarks[0];
-
-        // Use new stateless GestureLogic for recognition
-        const { match: rawMatch } = logic.analyze(worldLandmarks);
-
-        // Gesture stabilization: require N consistent detections before switching
-        let stableMatch = currentGestureRef.current;
-
-        if (rawMatch !== pendingGestureRef.current) {
-            // New gesture, start counting
-            pendingGestureRef.current = rawMatch;
-            gestureCountRef.current = 1;
-        } else {
-            // Same gesture, increment count
-            gestureCountRef.current++;
-        }
-
-        // If we've seen the same gesture N times, accept it
-        if (gestureCountRef.current >= STABILITY_THRESHOLD) {
-            stableMatch = rawMatch;
-            currentGestureRef.current = rawMatch;
-        }
-
-        // Use MediaPipe's hand detection confidence as the accuracy (not always 100%)
-        const rawConfidence = results.multiHandedness?.[0]?.score || 0;
-
-        // Apply exponential moving average smoothing (factor 0.15 = very smooth)
-        const smoothingFactor = 0.15;
-        smoothedSimilarityRef.current = smoothedSimilarityRef.current * (1 - smoothingFactor) + rawConfidence * smoothingFactor;
-
-        return {
-            confidence: rawConfidence,
-            fingerStates: stableMatch ? [`Detected: ${stableMatch}`] : ['Analyzing...'],
-            handCount: results.multiHandLandmarks?.length || 0,
-            landmarks: results.multiHandLandmarks[0],
-            worldLandmarks: worldLandmarks,
-            bestMatch: stableMatch,
-            similarity: smoothedSimilarityRef.current
-        };
-    }, [results, logic, STABILITY_THRESHOLD]);
-
-    // Debug logging effect
-    useEffect(() => {
-        if (detectionData.similarity > 0) {
-            console.log(`[HandTracking] Score: ${detectionData.similarity.toFixed(2)} | Match: ${detectionData.bestMatch || 'None'}`);
-        }
-    }, [detectionData.bestMatch, detectionData.similarity]);
-
     // Keyboard listener for calibration (Spacebar logs current detection)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -190,5 +205,3 @@ export const useHandTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
         detectionData,
     };
 };
-
-

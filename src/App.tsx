@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef } from 'react';
 import WebcamTile from './components/dashboard/WebcamTile';
 import GoalTile from './components/dashboard/GoalTile';
 import FeedbackTile from './components/dashboard/FeedbackTile';
@@ -31,32 +31,13 @@ function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { isReady, results, detectionData } = useHandTracking(videoRef);
 
-  // Smoothed accuracy ref for EMA
-  const smoothedAccuracyRef = useRef(0);
-
   const targetLetter = ALPHABET[targetIndex];
-
-  // Score when detection matches target
   const handleNext = () => setTargetIndex(prev => (prev + 1) % ALPHABET.length);
   const handlePrev = () => setTargetIndex(prev => (prev - 1 + ALPHABET.length) % ALPHABET.length);
-
-  // Use the new GestureLogic detection directly
   const displayedLetter = detectionData.bestMatch;
-
-  // Compute GENUINE accuracy: MediaPipe confidence when matched, 0 when not
-  const displayedAccuracy = useMemo(() => {
-    const isMatch = displayedLetter === targetLetter;
-
-    // When matched: use MediaPipe's real hand detection confidence (typically 70-99%)
-    // When not matched: 0%
-    const rawAccuracy = isMatch ? detectionData.confidence * 100 : 0;
-
-    // Apply light smoothing for less jitter (but keeps natural variation)
-    const smoothingFactor = 0.3;
-    smoothedAccuracyRef.current = smoothedAccuracyRef.current * (1 - smoothingFactor) + rawAccuracy * smoothingFactor;
-
-    return Math.round(smoothedAccuracyRef.current);
-  }, [displayedLetter, targetLetter, detectionData.confidence]);
+  const displayedAccuracy = displayedLetter === targetLetter
+    ? Math.round(detectionData.confidence * 100)
+    : 0;
 
   return (
     <main className="h-dvh w-dvw bg-zinc-950 flex flex-col transition-colors duration-700 font-sans">
