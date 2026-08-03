@@ -1,73 +1,84 @@
-# React + TypeScript + Vite
+# SignStream
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+SignStream is an interactive browser-based interface for practicing a focused set of ASL handshapes. It uses your webcam to track one hand, analyze its landmarks in real time, and give immediate feedback as you work through target letters.
 
-Currently, two official plugins are available:
+**[Try the live demo](https://derinbarutcu17.github.io/Signstream/)**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## What it does
 
-## React Compiler
+- Shows a target letter with a visual reference guide
+- Tracks a single hand through the browser camera
+- Detects 21 hand landmarks with MediaPipe Hands
+- Classifies handshapes with geometric landmark constraints
+- Stabilizes detections to reduce flicker while the hand moves
+- Displays recognition feedback and a live accuracy signal
+- Currently supports **A, B, D, F, I, L, R, U, V, W, and Y**
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+SignStream is a learning interface and technical prototype, not a complete ASL translation system.
 
-## Expanding the ESLint configuration
+## How it works
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. The browser requests camera access.
+2. MediaPipe Hands tracks the visible hand and returns its landmarks.
+3. `GestureLogic` checks finger extension, finger spread, and thumb relationships.
+4. The interface waits for a stable detection before changing the recognized letter.
+5. The dashboard compares the detected pose with the selected target and updates the feedback UI.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+The repository also includes a TensorFlow.js/KNN recognition service for adaptive recognition experiments.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Tech stack
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- MediaPipe Hands
+- TensorFlow.js and KNN Classifier
+- Framer Motion
+- react-webcam
+- Lucide React
+
+## Run locally
+
+```bash
+git clone https://github.com/derinbarutcu17/Signstream.git
+cd Signstream
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Then open the local URL printed by Vite.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Useful checks:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
+npm run lint
+npm run preview
 ```
+
+The build command runs TypeScript validation before creating the production bundle.
+
+## Project structure
+
+```text
+src/
+├── components/dashboard/   # Camera, target, score, and feedback tiles
+├── hooks/
+│   └── useHandTracking.ts  # MediaPipe camera and detection loop
+└── lib/
+    ├── GestureLogic.ts      # Landmark-based pose classification
+    ├── GestureEngine.ts     # Smoothed landmark and finger-state helpers
+    └── RecognitionService.ts # TensorFlow.js/KNN experiments
+```
+
+## Tips
+
+- Allow camera access when prompted.
+- Use clear lighting and keep one hand visible.
+- Hold the target pose steadily for a moment.
+- Recognition is most reliable when the hand is fully inside the camera frame.
+
+## License
+
+This project is available under the repository's existing license.
